@@ -32,7 +32,7 @@ float V_LV(float x, float y)
     return resultado;
 }
 
-// Faz um passo do metodo RKF45 
+// Faz um passo do metodo RKCK45 
 void rkf45_step(float t, float x, float y, float h,
                 float &x5, float &y5, float &erro)
 {
@@ -50,41 +50,44 @@ void rkf45_step(float t, float x, float y, float h,
     fLotka(t, x, y, dxdt, dydt);
     k1x = h * dxdt;  k1y = h * dydt;
 
-    // k2 = h * f(t + h/4, x + (1/4)*k1x, y + (1/4)*k1y)
-    x_aux = x + (1.0/4.0) * k1x;  y_aux = y + (1.0/4.0) * k1y;
-    fLotka(t + h/4.0, x_aux, y_aux, dxdt, dydt);
+    // k2 (a2 = 1/5)
+    x_aux = x + (1.0/5.0) * k1x;  y_aux = y + (1.0/5.0) * k1y;
+    fLotka(t + h/5.0, x_aux, y_aux, dxdt, dydt);
     k2x = h * dxdt;  k2y = h * dydt;
 
-    // k3 = h * f(t + 3h/8, x + 3/32 k1x + 9/32 k2x, y + 3/32 k1y + 9/32 k2y)
-    x_aux = x + (3.0/32.0)*k1x + (9.0/32.0)*k2x;
-    y_aux = y + (3.0/32.0)*k1y + (9.0/32.0)*k2y;
-    fLotka(t + 3.0*h/8.0, x_aux, y_aux, dxdt, dydt);
+    // k3 (a3 = 3/10)
+    x_aux = x + (3.0/40.0)*k1x + (9.0/40.0)*k2x;
+    y_aux = y + (3.0/40.0)*k1y + (9.0/40.0)*k2y;
+    fLotka(t + 3.0*h/10.0, x_aux, y_aux, dxdt, dydt);
     k3x = h * dxdt;  k3y = h * dydt;
 
-    x_aux = x + (1932.0/2197.0)*k1x - (7200.0/2197.0)*k2x + (7296.0/2197.0)*k3x;
-    y_aux = y + (1932.0/2197.0)*k1y - (7200.0/2197.0)*k2y + (7296.0/2197.0)*k3y;
-    fLotka(t + 12.0*h/13.0, x_aux, y_aux, dxdt, dydt);
+    // k4 (a4 = 3/5)
+    x_aux = x + (3.0/10.0)*k1x - (9.0/10.0)*k2x + (6.0/5.0)*k3x;
+    y_aux = y + (3.0/10.0)*k1y - (9.0/10.0)*k2y + (6.0/5.0)*k3y;
+    fLotka(t + 3.0*h/5.0, x_aux, y_aux, dxdt, dydt);
     k4x = h * dxdt;  k4y = h * dydt;
 
-    x_aux = x + (439.0/216.0)*k1x - 8.0*k2x + (3680.0/513.0)*k3x - (845.0/4104.0)*k4x;
-    y_aux = y + (439.0/216.0)*k1y - 8.0*k2y + (3680.0/513.0)*k3y - (845.0/4104.0)*k4y;
+    // k5 (a5 = 1)
+    x_aux = x - (11.0/54.0)*k1x + (5.0/2.0)*k2x - (70.0/27.0)*k3x + (35.0/27.0)*k4x;
+    y_aux = y - (11.0/54.0)*k1y + (5.0/2.0)*k2y - (70.0/27.0)*k3y + (35.0/27.0)*k4y;
     fLotka(t + h, x_aux, y_aux, dxdt, dydt);
     k5x = h * dxdt;  k5y = h * dydt;
 
-
-    x_aux = x - (8.0/27.0)*k1x + 2.0*k2x - (3544.0/2565.0)*k3x + (1859.0/4104.0)*k4x - (11.0/40.0)*k5x;
-    y_aux = y - (8.0/27.0)*k1y + 2.0*k2y - (3544.0/2565.0)*k3y + (1859.0/4104.0)*k4y - (11.0/40.0)*k5y;
-    fLotka(t + h/2.0, x_aux, y_aux, dxdt, dydt);
+    // k6 (a6 = 7/8)
+    x_aux = x + (1631.0/55296.0)*k1x + (175.0/512.0)*k2x + (575.0/13824.0)*k3x + (44275.0/110592.0)*k4x + (253.0/4096.0)*k5x;
+    y_aux = y + (1631.0/55296.0)*k1y + (175.0/512.0)*k2y+ (575.0/13824.0)*k3y + (44275.0/110592.0)*k4y + (253.0/4096.0)*k5y;
+    fLotka(t + 7.0*h/8.0, x_aux, y_aux, dxdt, dydt);
     k6x = h * dxdt;  k6y = h * dydt;
 
-    // y4 (ordem 4)
-    float x4, y4;
-    x4 = x + (25.0/216.0)*k1x + (1408.0/2565.0)*k3x + (2197.0/4104.0)*k4x - (1.0/5.0)*k5x;
-    y4 = y + (25.0/216.0)*k1y + (1408.0/2565.0)*k3y + (2197.0/4104.0)*k4y - (1.0/5.0)*k5y;
 
-    // y5 (ordem 5)
-    x5 = x + (16.0/135.0)*k1x + (6656.0/12825.0)*k3x + (28561.0/56430.0)*k4x - (9.0/50.0)*k5x + (2.0/55.0)*k6x;
-    y5 = y + (16.0/135.0)*k1y + (6656.0/12825.0)*k3y + (28561.0/56430.0)*k4y - (9.0/50.0)*k5y + (2.0/55.0)*k6y;
+     // y4 ordem 4
+    float x4, y4;
+    x4 = x + (2825.0/27648.0)*k1x + (18575.0/48384.0)*k3x+ (13525.0/55296.0)*k4x + (277.0/14336.0)*k5x+ (1.0/4.0)*k6x;
+    y4 = y + (2825.0/27648.0)*k1y + (18575.0/48384.0)*k3y+ (13525.0/55296.0)*k4y + (277.0/14336.0)*k5y+ (1.0/4.0)*k6y;
+
+    // y5 ordem 5
+    x5 = x + (37.0/378.0)*k1x + (250.0/621.0)*k3x+ (125.0/594.0)*k4x + (512.0/1771.0)*k6x;
+    y5 = y + (37.0/378.0)*k1y + (250.0/621.0)*k3y+ (125.0/594.0)*k4y + (512.0/1771.0)*k6y;
 
     // erro = max(|x5 - x4|, |y5 - y4|)
     float erro_x = x5 - x4;
@@ -113,7 +116,7 @@ void integrar_LV(float t0, float tf,
 
     float K0 = V_LV(x0, y0);
     cout << fixed << setprecision(10);
-    ofstream arquivo("t60.tsv");
+    ofstream arquivo("t100.tsv");
     arquivo << fixed << setprecision(10);
 
     cout    << "# K0 = " << K0 << "\n";
@@ -197,12 +200,12 @@ void integrar_LV(float t0, float tf,
 int main()
 {
     float t0  = 0.0;    // tempo 
-    float tf  = 60.0;   // tempo 
+    float tf  = 100.0;   // tempo 
     float h0  = 0.05;   // passo 
     float tol = 1e-6;   // tolerancia 
 
-    float x0 = 3.0;     // presa 
-    float y0 = 1.0;     // predador 
+    float x0 = 4.0;     // presa 
+    float y0 = 2.0;     // predador 
 
     integrar_LV(t0, tf, x0, y0, h0, tol);
 
